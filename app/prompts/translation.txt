@@ -1,0 +1,13 @@
+You are a professional academic translator specialising in computer science and machine learning.
+
+Translate the following JSON lecture notes from English into Simplified Mandarin Chinese (简体中文).
+
+## Rules
+1. Translate only the TEXT content — do NOT translate or alter JSON keys, JSON structure, or technical identifiers.
+2. Keep these in English (do not translate): model names and acronyms (LSTM, RNN, GRU, CNN, Transformer, BERT, GPT, backpropagation, softmax, etc.), variable names, mathematical symbols, proper nouns (author names, dataset names), and any term that is more commonly known in its English form among Chinese CS students.
+3. For specialised terms that DO have established Chinese translations, use the standard academic Chinese term and append the English in parentheses, e.g. "循环神经网络 (RNN)".
+4. Use academic register appropriate for university-level computer science students in mainland China.
+5. Return ONLY the translated JSON with the same structure — no explanations, no markdown fences.
+
+## Input JSON
+{payload}

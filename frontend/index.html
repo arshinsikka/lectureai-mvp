@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LectureAI — AI-Powered Lecture Notes</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            magenta: { DEFAULT: '#D6249F', dark: '#b01d86', light: '#f472d0' },
+            ink:     { DEFAULT: '#0A0A0A', soft: '#1A1A2E' },
+          },
+          fontFamily: { sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'] },
+          keyframes: {
+            fadeUp:    { from: { opacity: '0', transform: 'translateY(16px)' }, to: { opacity: '1', transform: 'translateY(0)' } },
+            fadeIn:    { from: { opacity: '0' }, to: { opacity: '1' } },
+            scaleIn:   { from: { opacity: '0', transform: 'scale(.93)' }, to: { opacity: '1', transform: 'scale(1)' } },
+            shimmer:   { from: { backgroundPosition: '-300% 0' }, to: { backgroundPosition: '300% 0' } },
+            pulseRing: { '0%,100%': { opacity: '1', transform: 'scale(1)' }, '50%': { opacity: '.5', transform: 'scale(1.15)' } },
+            spinRing:  { to: { transform: 'rotate(360deg)' } },
+            confetti:  { '0%': { transform: 'translateY(0) rotate(0deg)', opacity: '1' }, '100%': { transform: 'translateY(120px) rotate(720deg)', opacity: '0' } },
+            checkDraw: { from: { strokeDashoffset: '100' }, to: { strokeDashoffset: '0' } },
+            meshMove:  { '0%,100%': { backgroundPosition: '0% 50%' }, '50%': { backgroundPosition: '100% 50%' } },
+          },
+          animation: {
+            'fade-up':    'fadeUp .45s cubic-bezier(.16,1,.3,1) both',
+            'fade-in':    'fadeIn .3s ease both',
+            'scale-in':   'scaleIn .4s cubic-bezier(.16,1,.3,1) both',
+            'shimmer':    'shimmer 2.8s linear infinite',
+            'pulse-ring': 'pulseRing 1.6s ease-in-out infinite',
+            'spin-ring':  'spinRing .9s linear infinite',
+            'mesh':       'meshMove 8s ease infinite',
+            'check-draw': 'checkDraw .5s ease forwards',
+          },
+        },
+      },
+    };
+  </script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; background: #FAFAFA; color: #1A1A2E; }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #D6249F55; border-radius: 10px; }
+
+    /* ── View system ── */
+    .view { display: none; }
+    .view.active { display: block; }
+
+    /* ── Animated gradient hero ── */
+    .hero-gradient {
+      background: linear-gradient(135deg, #0A0A0A 0%, #1a0a14 30%, #2d0826 55%, #FAFAFA 100%);
+      background-size: 300% 300%;
+      animation: meshMove 10s ease infinite;
+    }
+
+    /* ── Drop zone ── */
+    .drop-zone {
+      transition: border-color .2s ease, background .2s ease, transform .2s ease, box-shadow .2s ease;
+    }
+    .drop-zone.drag-over {
+      border-color: #D6249F !important;
+      background: #fdf0f9 !important;
+      transform: scale(1.012);
+      box-shadow: 0 0 0 4px rgba(214,36,159,.12);
+    }
+
+    /* ── Primary button ── */
+    .btn-primary {
+      background: linear-gradient(135deg, #D6249F 0%, #e83db5 50%, #D6249F 100%);
+      background-size: 200% 200%;
+      transition: background-position .3s ease, transform .15s ease, box-shadow .15s ease;
+    }
+    .btn-primary:hover:not(:disabled) {
+      background-position: right center;
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(214,36,159,.4);
+    }
+    .btn-primary:active:not(:disabled) { transform: translateY(0); }
+    .btn-primary:disabled { opacity: .4; cursor: not-allowed; }
+
+    /* ── Secondary button ── */
+    .btn-secondary {
+      transition: background .15s ease, color .15s ease, border-color .15s ease, transform .15s ease;
+    }
+    .btn-secondary:hover {
+      background: #1A1A2E;
+      color: #fff;
+      transform: translateY(-1px);
+    }
+
+    /* ── Settings body ── */
+    #settings-body { max-height: 0; overflow: hidden; transition: max-height .35s cubic-bezier(.16,1,.3,1); }
+    #settings-body.open { max-height: 200px; }
+
+    /* ── Shimmer text ── */
+    .text-shimmer {
+      background: linear-gradient(90deg, #1A1A2E 20%, #D6249F 50%, #1A1A2E 80%);
+      background-size: 300% auto;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: shimmer 2.8s linear infinite;
+    }
+
+    /* ── Progress ring ── */
+    .ring-track  { stroke: #e8e8e8; }
+    .ring-fill   {
+      stroke: url(#ringGradient);
+      stroke-linecap: round;
+      transform: rotate(-90deg);
+      transform-origin: 50% 50%;
+      transition: stroke-dashoffset .6s cubic-bezier(.4,0,.2,1);
+    }
+
+    /* ── Step states ── */
+    .step-dot-done    { background: #10B981; }
+    .step-dot-active  { background: #D6249F; animation: pulseRing 1.4s ease-in-out infinite; }
+    .step-dot-pending { background: #D1D5DB; }
+
+    /* ── Confetti particle ── */
+    .confetti-piece {
+      position: absolute;
+      width: 8px; height: 8px;
+      border-radius: 2px;
+      animation: confetti 1.2s ease forwards;
+      pointer-events: none;
+    }
+
+    /* ── Check path animation ── */
+    .check-path {
+      stroke-dasharray: 100;
+      stroke-dashoffset: 100;
+    }
+    .check-path.drawn { animation: checkDraw .55s .2s cubic-bezier(.16,1,.3,1) forwards; }
+
+    /* ── File pill ── */
+    .file-pill { animation: fadeUp .2s ease both; }
+
+    /* ── Card shadow ── */
+    .card { box-shadow: 0 1px 3px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.05); }
+    .card-hover { transition: box-shadow .2s ease, transform .2s ease; }
+    .card-hover:hover { box-shadow: 0 4px 24px rgba(0,0,0,.1); transform: translateY(-1px); }
+
+    /* ── Nav glass ── */
+    .nav-glass { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+
+    /* ── Stat number ── */
+    .stat-number { font-variant-numeric: tabular-nums; }
+
+    /* ── How-it-works connector ── */
+    .step-connector { flex: 1; height: 1px; background: linear-gradient(90deg, #E5E7EB, #D6249F44, #E5E7EB); }
+
+    /* ── Delay utilities ── */
+    .delay-100 { animation-delay: .1s; }
+    .delay-200 { animation-delay: .2s; }
+    .delay-300 { animation-delay: .3s; }
+    .delay-400 { animation-delay: .4s; }
+    .delay-500 { animation-delay: .5s; }
+
+    /* ── Mobile ── */
+    @media (max-width: 640px) {
+      .hero-gradient { background: linear-gradient(160deg, #0A0A0A 0%, #2d0826 60%, #FAFAFA 100%); }
+    }
+  </style>
+</head>
+
+<body class="min-h-screen flex flex-col">
+
+<!-- ═══════════════════════════ NAV ═══════════════════════════════ -->
+<header class="sticky top-0 z-50 w-full bg-ink/95 nav-glass border-b border-white/5">
+  <div class="max-w-6xl mx-auto px-5 sm:px-8 h-16 flex items-center justify-between">
+
+    <!-- Logo + wordmark -->
+    <div class="flex items-center gap-3">
+      <!-- Robot mascot SVG (white version for dark nav) -->
+      <div class="w-8 h-8 flex-shrink-0">
+        <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Antenna -->
+          <line x1="20" y1="4" x2="20" y2="10" stroke="white" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="20" cy="3" r="2" fill="#D6249F"/>
+          <!-- Head -->
+          <rect x="8" y="10" width="24" height="18" rx="5" fill="white"/>
+          <!-- Eyes -->
+          <rect x="13" y="16" width="5" height="5" rx="1.5" fill="#0A0A0A"/>
+          <rect x="22" y="16" width="5" height="5" rx="1.5" fill="#0A0A0A"/>
+          <!-- Eye shine -->
+          <circle cx="14.5" cy="17.5" r="1" fill="#D6249F"/>
+          <circle cx="23.5" cy="17.5" r="1" fill="#D6249F"/>
+          <!-- Mouth -->
+          <rect x="15" y="24" width="10" height="2" rx="1" fill="#0A0A0A" opacity=".5"/>
+          <!-- Ears -->
+          <rect x="4" y="16" width="4" height="7" rx="2" fill="white"/>
+          <rect x="32" y="16" width="4" height="7" rx="2" fill="white"/>
+          <!-- Body -->
+          <rect x="11" y="30" width="18" height="8" rx="4" fill="white" opacity=".85"/>
+          <!-- Chest dot -->
+          <circle cx="20" cy="34" r="2" fill="#D6249F"/>
+        </svg>
+      </div>
+      <div class="flex items-center gap-2">
+        <span class="text-white font-bold text-lg tracking-tight">Lecture<span class="text-magenta">AI</span></span>
+        <span class="text-[10px] font-semibold text-magenta/80 border border-magenta/30 rounded-full px-2 py-0.5 tracking-wide uppercase">beta</span>
+      </div>
+    </div>
+
+    <!-- Nav right -->
+    <a href="https://lectureai.co" target="_blank"
+       class="text-xs text-white/40 hover:text-white/80 transition-colors duration-200 font-medium">
+      lectureai.co ↗
+    </a>
+  </div>
+</header>
+
+
+<!-- ═══════════════════════════ MAIN ═════════════════════════════ -->
+<main class="flex-1">
+
+
+  <!-- ══════════════════ VIEW 1 · UPLOAD ════════════════════════ -->
+  <div id="view-upload" class="view active">
+
+    <!-- Hero -->
+    <section class="hero-gradient pt-16 pb-20 px-5 sm:px-8 text-center">
+      <div class="max-w-2xl mx-auto">
+        <div class="inline-flex items-center gap-2 bg-white/10 border border-white/15 rounded-full px-4 py-1.5 mb-6 animate-fade-up">
+          <span class="w-1.5 h-1.5 rounded-full bg-magenta animate-pulse-ring"></span>
+          <span class="text-white/70 text-xs font-medium tracking-wide">Powered by Whisper · Gemini · GPT-4o</span>
+        </div>
+        <h1 class="text-4xl sm:text-6xl font-black text-white leading-tight tracking-tight animate-fade-up delay-100">
+          Turn any lecture<br/>
+          <span class="text-transparent bg-clip-text" style="background-image: linear-gradient(135deg, #f472d0 0%, #D6249F 50%, #9d1b7a 100%);">into structured notes</span>
+        </h1>
+        <p class="mt-5 text-white/55 text-base sm:text-lg max-w-lg mx-auto leading-relaxed animate-fade-up delay-200">
+          Upload a recording. Get bilingual English + Mandarin notes, action items, and captions — automatically.
+        </p>
+      </div>
+    </section>
+
+    <!-- Upload card -->
+    <section class="px-4 sm:px-6 -mt-10 pb-8">
+      <div class="max-w-xl mx-auto">
+
+        <div class="bg-white rounded-2xl card p-6 sm:p-8 animate-scale-in delay-300">
+
+          <!-- ── Audio drop zone ── -->
+          <div id="audio-drop"
+               class="drop-zone relative border-2 border-dashed border-gray-200 rounded-xl p-8 text-center cursor-pointer bg-gray-50/60 hover:border-magenta hover:bg-pink-50/30"
+               role="button" tabindex="0" aria-label="Upload lecture audio">
+            <input id="audio-input" type="file" accept=".mp3,.m4a,.wav,.ogg,.flac,.webm"
+                   class="absolute inset-0 opacity-0 cursor-pointer w-full h-full" />
+
+            <!-- Idle -->
+            <div id="audio-idle" class="pointer-events-none select-none">
+              <div class="mx-auto mb-4 w-14 h-14 rounded-2xl bg-magenta/10 flex items-center justify-center">
+                <svg class="w-7 h-7 text-magenta" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 1.5a3 3 0 00-3 3v7.5a3 3 0 006 0V4.5a3 3 0 00-3-3z"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5a7.5 7.5 0 01-15 0M12 18v4.5M8.25 22.5h7.5"/>
+                </svg>
+              </div>
+              <p class="font-semibold text-ink text-sm">Drop your lecture recording here</p>
+              <p class="text-sm text-gray-400 mt-1">or <span class="text-magenta font-medium underline underline-offset-2">browse files</span></p>
+              <p class="text-xs text-gray-300 mt-3 font-medium tracking-wide">.MP3 · .M4A · .WAV · .OGG · up to 500 MB</p>
+            </div>
+
+            <!-- Selected -->
+            <div id="audio-selected" class="hidden pointer-events-none select-none">
+              <div class="flex items-center justify-center gap-4">
+                <div class="w-12 h-12 rounded-xl bg-magenta flex items-center justify-center flex-shrink-0">
+                  <svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2z"/>
+                  </svg>
+                </div>
+                <div class="text-left min-w-0">
+                  <p id="audio-name" class="font-semibold text-ink text-sm truncate max-w-[200px] sm:max-w-xs"></p>
+                  <p id="audio-size" class="text-xs text-gray-400 mt-0.5"></p>
+                </div>
+                <button id="audio-clear" class="pointer-events-auto ml-auto flex-shrink-0 w-7 h-7 rounded-full bg-gray-100 hover:bg-red-100 flex items-center justify-center text-gray-400 hover:text-red-500 transition-all" title="Remove">
+                  <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── Slides upload ── -->
+          <div class="mt-5">
+            <p class="text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-2.5">Lecture Slides <span class="font-normal normal-case tracking-normal">(optional — improves accuracy)</span></p>
+            <div id="ctx-drop"
+                 class="drop-zone relative flex items-center gap-3 border border-dashed border-gray-200 rounded-xl px-4 py-3.5 cursor-pointer hover:border-magenta/50 hover:bg-pink-50/20"
+                 role="button" tabindex="0" aria-label="Upload context files">
+              <input id="ctx-input" type="file" accept=".pdf,.pptx,.docx,.txt" multiple
+                     class="absolute inset-0 opacity-0 cursor-pointer w-full h-full" />
+              <div class="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0 pointer-events-none">
+                <svg class="w-4.5 h-4.5 text-gray-400" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+              </div>
+              <div class="flex-1 pointer-events-none">
+                <p class="text-sm text-gray-500 font-medium">Drop PDF, PPTX, or DOCX</p>
+                <p class="text-xs text-gray-300 mt-0.5">Multiple files supported</p>
+              </div>
+              <span id="ctx-count" class="hidden text-xs font-semibold text-magenta bg-magenta/10 rounded-full px-2.5 py-1 pointer-events-none"></span>
+            </div>
+            <div id="ctx-pills" class="flex flex-wrap gap-2 mt-2.5"></div>
+          </div>
+
+          <!-- ── Settings ── -->
+          <div class="mt-5 border border-gray-100 rounded-xl overflow-hidden">
+            <button id="settings-toggle"
+                    class="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-gray-500 hover:bg-gray-50/80 transition-colors"
+                    aria-expanded="false">
+              <span class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+                Settings
+              </span>
+              <svg id="settings-chevron" class="w-4 h-4 text-gray-300 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+              </svg>
+            </button>
+            <div id="settings-body">
+              <div class="px-4 pb-4 pt-1 border-t border-gray-100">
+                <label class="block text-xs font-medium text-gray-400 mb-1.5" for="email-input">
+                  Email notes when ready
+                </label>
+                <input id="email-input" type="email" placeholder="you@university.edu"
+                       class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-ink placeholder-gray-300 focus:outline-none focus:border-magenta focus:ring-2 focus:ring-magenta/15 transition-all" />
+                <p class="text-xs text-gray-300 mt-1.5">Notes sent as a .docx attachment</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── Process button ── -->
+          <button id="process-btn" disabled
+                  class="btn-primary mt-6 w-full py-4 rounded-xl font-bold text-white text-base focus:outline-none focus:ring-2 focus:ring-magenta/40">
+            <span id="process-btn-label" class="flex items-center justify-center gap-2.5">
+              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+              </svg>
+              Process Lecture
+            </span>
+          </button>
+          <p id="upload-error" class="hidden mt-3 text-sm text-red-500 text-center font-medium"></p>
+        </div>
+
+        <!-- How it works -->
+        <div class="mt-10 mb-2 animate-fade-up delay-400">
+          <p class="text-center text-xs font-semibold text-gray-400 uppercase tracking-widest mb-6">How it works</p>
+          <div class="flex items-center gap-0">
+
+            <div class="flex flex-col items-center flex-1 text-center px-2">
+              <div class="w-11 h-11 rounded-2xl bg-white card flex items-center justify-center mb-3">
+                <svg class="w-5 h-5 text-magenta" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                </svg>
+              </div>
+              <p class="text-xs font-semibold text-ink">Upload</p>
+              <p class="text-[11px] text-gray-400 mt-0.5">Audio + slides</p>
+            </div>
+
+            <div class="step-connector mb-5"></div>
+
+            <div class="flex flex-col items-center flex-1 text-center px-2">
+              <div class="w-11 h-11 rounded-2xl bg-white card flex items-center justify-center mb-3">
+                <svg class="w-5 h-5 text-magenta" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                </svg>
+              </div>
+              <p class="text-xs font-semibold text-ink">AI Process</p>
+              <p class="text-[11px] text-gray-400 mt-0.5">Whisper + Gemini</p>
+            </div>
+
+            <div class="step-connector mb-5"></div>
+
+            <div class="flex flex-col items-center flex-1 text-center px-2">
+              <div class="w-11 h-11 rounded-2xl bg-white card flex items-center justify-center mb-3">
+                <svg class="w-5 h-5 text-magenta" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                </svg>
+              </div>
+              <p class="text-xs font-semibold text-ink">Download</p>
+              <p class="text-[11px] text-gray-400 mt-0.5">EN + ZH notes</p>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </section>
+  </div><!-- /view-upload -->
+
+
+  <!-- ══════════════════ VIEW 2 · PROCESSING ════════════════════ -->
+  <div id="view-processing" class="view">
+
+    <!-- Subtle top gradient -->
+    <div class="h-1 w-full" style="background: linear-gradient(90deg, #D6249F, #9d1b7a, #D6249F); background-size: 200%; animation: shimmer 2s linear infinite;"></div>
+
+    <section class="max-w-xl mx-auto px-4 sm:px-6 pt-12 pb-16">
+
+      <!-- Heading -->
+      <div class="text-center mb-10 animate-fade-up">
+        <h2 class="text-3xl sm:text-4xl font-black text-shimmer mb-2">Processing your lecture…</h2>
+        <p class="text-gray-400 text-sm">This usually takes 10–15 minutes</p>
+        <div class="inline-flex items-center gap-1.5 mt-3 text-xs text-gray-300">
+          <span class="w-1.5 h-1.5 rounded-full bg-magenta animate-pulse-ring"></span>
+          <span>Pipeline running</span>
+        </div>
+      </div>
+
+      <!-- Progress ring -->
+      <div class="flex justify-center mb-4 animate-scale-in delay-100">
+        <div class="relative w-40 h-40">
+          <svg class="w-40 h-40 -rotate-90" viewBox="0 0 144 144">
+            <defs>
+              <linearGradient id="ringGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%"   stop-color="#f472d0"/>
+                <stop offset="100%" stop-color="#9d1b7a"/>
+              </linearGradient>
+            </defs>
+            <circle class="ring-track" cx="72" cy="72" r="60" fill="none" stroke-width="10"/>
+            <circle id="progress-ring" class="ring-fill" cx="72" cy="72" r="60"
+                    fill="none" stroke-width="10" stroke-linecap="round"
+                    stroke-dasharray="376.99" stroke-dashoffset="376.99"/>
+          </svg>
+          <div class="absolute inset-0 flex flex-col items-center justify-center">
+            <span id="progress-pct" class="text-4xl font-black text-ink stat-number">0%</span>
+            <span class="text-xs text-gray-400 font-medium mt-0.5">complete</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Current step label -->
+      <p id="current-step-label" class="text-center text-sm font-semibold text-magenta mb-8 h-5 transition-all duration-300"></p>
+
+      <!-- Steps list -->
+      <div class="bg-white rounded-2xl card px-5 py-4 animate-fade-up delay-200">
+        <div id="steps-list" class="divide-y divide-gray-50"></div>
+      </div>
+
+      <!-- Error card -->
+      <div id="processing-error" class="hidden mt-6 bg-red-50 border border-red-100 rounded-2xl p-5">
+        <div class="flex items-start gap-3">
+          <div class="w-9 h-9 rounded-xl bg-red-100 flex items-center justify-center flex-shrink-0">
+            <svg class="w-5 h-5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+            </svg>
+          </div>
+          <div class="flex-1">
+            <p class="font-bold text-red-700 text-sm">Pipeline error</p>
+            <p id="error-message" class="text-xs text-red-500 mt-1 leading-relaxed"></p>
+          </div>
+        </div>
+        <button id="retry-btn" class="mt-4 w-full py-2.5 rounded-xl border border-red-200 text-red-600 text-sm font-semibold hover:bg-red-100 transition-colors">
+          ← Start over
+        </button>
+      </div>
+
+    </section>
+  </div><!-- /view-processing -->
+
+
+  <!-- ══════════════════ VIEW 3 · RESULTS ══════════════════════ -->
+  <div id="view-results" class="view">
+
+    <!-- Confetti container -->
+    <div id="confetti-container" class="fixed inset-0 pointer-events-none overflow-hidden z-50"></div>
+
+    <section class="max-w-xl mx-auto px-4 sm:px-6 pt-12 pb-16">
+
+      <!-- Success hero -->
+      <div class="text-center mb-10 animate-fade-up">
+        <div class="relative inline-flex items-center justify-center mb-5">
+          <!-- Outer glow ring -->
+          <div class="absolute w-28 h-28 rounded-full bg-emerald-100 opacity-60"></div>
+          <div class="relative w-20 h-20 rounded-full bg-emerald-500 flex items-center justify-center shadow-lg" style="box-shadow: 0 8px 30px rgba(16,185,129,.35)">
+            <svg class="w-10 h-10" viewBox="0 0 40 40" fill="none">
+              <path class="check-path" id="check-svg-path" d="M8 20l8 8 16-16" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+        </div>
+        <h2 class="text-3xl sm:text-4xl font-black text-ink">Your notes are ready!</h2>
+        <p class="text-gray-400 text-sm mt-2">Bilingual notes generated successfully</p>
+      </div>
+
+      <!-- Stats card -->
+      <div class="bg-white rounded-2xl card p-5 mb-5 animate-fade-up delay-100">
+        <p id="result-title" class="font-bold text-ink text-sm mb-4 truncate"></p>
+        <div class="grid grid-cols-3 gap-3">
+          <div class="bg-gray-50 rounded-xl py-4 text-center card-hover">
+            <p id="stat-topics" class="text-2xl font-black text-magenta stat-number">—</p>
+            <p class="text-xs text-gray-400 font-medium mt-1">Topics</p>
+          </div>
+          <div class="bg-gray-50 rounded-xl py-4 text-center card-hover">
+            <p id="stat-actions" class="text-2xl font-black text-ink stat-number">—</p>
+            <p class="text-xs text-gray-400 font-medium mt-1">Action items</p>
+          </div>
+          <div class="bg-gray-50 rounded-xl py-4 text-center card-hover">
+            <p class="text-xl font-black text-emerald-500">EN+ZH</p>
+            <p class="text-xs text-gray-400 font-medium mt-1">Bilingual</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Download buttons -->
+      <div class="space-y-3 mb-5 animate-fade-up delay-200">
+        <a id="dl-docx" href="#"
+           class="btn-primary flex items-center justify-center gap-3 w-full py-4 rounded-xl text-white font-bold text-base no-underline">
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+          </svg>
+          Download Notes (.docx)
+        </a>
+        <a id="dl-srt" href="#"
+           class="btn-secondary flex items-center justify-center gap-3 w-full py-3.5 rounded-xl border-2 border-ink text-ink font-bold text-base no-underline">
+          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/>
+          </svg>
+          Download Captions (.srt)
+        </a>
+      </div>
+
+      <!-- Email confirmation -->
+      <div id="email-confirmation" class="hidden mb-5 animate-fade-up delay-300">
+        <div id="email-confirmation-inner" class="flex items-center gap-3 rounded-xl px-4 py-3">
+          <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+          </svg>
+          <span id="email-confirm-text" class="text-sm font-medium"></span>
+        </div>
+      </div>
+
+      <!-- Reset -->
+      <div class="text-center animate-fade-up delay-400">
+        <button id="reset-btn" class="text-sm text-gray-400 hover:text-magenta transition-colors font-medium underline underline-offset-4">
+          ← Process another lecture
+        </button>
+      </div>
+
+    </section>
+  </div><!-- /view-results -->
+
+</main>
+
+
+<!-- ═══════════════════════════ FOOTER ═══════════════════════════ -->
+<footer class="border-t border-gray-100 py-6 text-center">
+  <p class="text-xs text-gray-300 font-medium">
+    Built by <a href="https://lectureai.co" target="_blank" class="text-magenta/60 hover:text-magenta transition-colors">LectureAI</a> · NUS 2025
+  </p>
+</footer>
+
+
+<!-- ═══════════════════════════ SCRIPT ═══════════════════════════ -->
+<script>
+const API = 'http://localhost:8000';
+
+// ── State ───────────────────────────────────────────────────────────
+let state = {
+  audioFile:  null,
+  ctxFiles:   [],
+  sessionId:  null,
+  pollTimer:  null,
+  results:    null,
+  emailSent:  null,
+  emailError: null,
+};
+
+const $ = id => document.getElementById(id);
+
+// ── View transitions ────────────────────────────────────────────────
+function showView(name) {
+  ['upload', 'processing', 'results'].forEach(v => {
+    const el = $(`view-${v}`);
+    if (v === name) {
+      el.classList.add('active');
+      // Retrigger animations by toggling a class
+      el.querySelectorAll('.animate-fade-up, .animate-scale-in, .animate-fade-in').forEach(child => {
+        child.style.animation = 'none';
+        child.offsetHeight; // reflow
+        child.style.animation = '';
+      });
+    } else {
+      el.classList.remove('active');
+    }
+  });
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ── Pipeline steps ──────────────────────────────────────────────────
+const PIPELINE_STEPS = [
+  { key: 'preprocess',      label: 'Preprocess Audio' },
+  { key: 'transcribe',      label: 'Transcribe' },
+  { key: 'parse_context',   label: 'Parse Slides' },
+  { key: 'correct',         label: 'Correct Transcript' },
+  { key: 'summarise',       label: 'Summarise' },
+  { key: 'action_items',    label: 'Action Items' },
+  { key: 'translate',       label: 'Translate to Mandarin' },
+  { key: 'generate_doc',    label: 'Generate Notes' },
+  { key: 'export_captions', label: 'Export Captions' },
+  { key: 'send_email',      label: 'Send Email' },
+];
+
+const STEP_LABELS = {
+  preprocess:      'Preprocessing audio…',
+  transcribe:      'Transcribing with Whisper…',
+  parse_context:   'Parsing slide context…',
+  correct:         'Correcting transcript…',
+  summarise:       'Summarising lecture…',
+  action_items:    'Extracting action items…',
+  translate:       'Translating to Mandarin…',
+  generate_doc:    'Generating notes document…',
+  export_captions: 'Exporting captions…',
+  send_email:      'Sending email…',
+};
+
+function buildStepsList() {
+  const list = $('steps-list');
+  list.innerHTML = '';
+  PIPELINE_STEPS.forEach((step, i) => {
+    const el = document.createElement('div');
+    el.id = `step-${step.key}`;
+    el.className = 'flex items-center gap-3.5 py-2.5';
+    el.innerHTML = `
+      <div class="step-dot w-6 h-6 rounded-full step-dot-pending flex items-center justify-center flex-shrink-0 transition-all duration-300">
+        <svg class="step-check-icon w-3 h-3 text-white hidden" fill="none" viewBox="0 0 12 12" stroke="currentColor" stroke-width="2.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M2 6l3 3 5-5"/>
+        </svg>
+      </div>
+      <span class="step-label text-sm text-gray-300 font-medium transition-all duration-300">${step.label}</span>
+    `;
+    list.appendChild(el);
+  });
+}
+
+function updateSteps(currentStep, completedSteps) {
+  const completed = new Set(completedSteps || []);
+  PIPELINE_STEPS.forEach(step => {
+    const el    = $(`step-${step.key}`);
+    if (!el) return;
+    const dot   = el.querySelector('.step-dot');
+    const check = el.querySelector('.step-check-icon');
+    const label = el.querySelector('.step-label');
+
+    dot.className = 'step-dot w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-300';
+
+    if (completed.has(step.key)) {
+      dot.classList.add('step-dot-done');
+      check.classList.remove('hidden');
+      label.className = 'step-label text-sm font-semibold text-ink transition-all duration-300';
+    } else if (step.key === currentStep) {
+      dot.classList.add('step-dot-active');
+      check.classList.add('hidden');
+      label.className = 'step-label text-sm font-bold text-magenta transition-all duration-300';
+    } else {
+      dot.classList.add('step-dot-pending');
+      check.classList.add('hidden');
+      label.className = 'step-label text-sm text-gray-300 font-medium transition-all duration-300';
+    }
+  });
+}
+
+function updateProgress(pct) {
+  const circumference = 376.99; // 2 * π * 60
+  const ring = $('progress-ring');
+  ring.style.strokeDashoffset = circumference - (pct / 100) * circumference;
+  $('progress-pct').textContent = `${Math.round(pct)}%`;
+}
+
+// ── Confetti ────────────────────────────────────────────────────────
+function launchConfetti() {
+  const container = $('confetti-container');
+  const colors = ['#D6249F', '#10B981', '#f472d0', '#60a5fa', '#fbbf24', '#a78bfa'];
+  for (let i = 0; i < 48; i++) {
+    const el = document.createElement('div');
+    el.className = 'confetti-piece';
+    el.style.cssText = `
+      left: ${Math.random() * 100}%;
+      top: ${-8 + Math.random() * -40}px;
+      background: ${colors[Math.floor(Math.random() * colors.length)]};
+      transform: rotate(${Math.random() * 360}deg);
+      animation-delay: ${Math.random() * .8}s;
+      animation-duration: ${1 + Math.random() * .8}s;
+      width: ${6 + Math.random() * 6}px;
+      height: ${6 + Math.random() * 6}px;
+      border-radius: ${Math.random() > .5 ? '50%' : '2px'};
+    `;
+    container.appendChild(el);
+  }
+  setTimeout(() => { container.innerHTML = ''; }, 3000);
+}
+
+// ── File helpers ────────────────────────────────────────────────────
+function fmtSize(bytes) {
+  if (bytes < 1024)    return `${bytes} B`;
+  if (bytes < 1048576) return `${(bytes/1024).toFixed(1)} KB`;
+  return `${(bytes/1048576).toFixed(1)} MB`;
+}
+
+function setAudioFile(file) {
+  if (!file) return;
+  state.audioFile = file;
+  $('audio-idle').classList.add('hidden');
+  $('audio-selected').classList.remove('hidden');
+  $('audio-name').textContent = file.name;
+  $('audio-size').textContent = fmtSize(file.size);
+  $('process-btn').disabled = false;
+}
+
+function clearAudio() {
+  state.audioFile = null;
+  $('audio-input').value = '';
+  $('audio-idle').classList.remove('hidden');
+  $('audio-selected').classList.add('hidden');
+  $('process-btn').disabled = true;
+}
+
+function addCtxFiles(files) {
+  const allowed = ['.pdf', '.pptx', '.docx', '.txt'];
+  Array.from(files).forEach(f => {
+    const ext = '.' + f.name.split('.').pop().toLowerCase();
+    if (!allowed.includes(ext)) return;
+    if (state.ctxFiles.find(x => x.name === f.name)) return;
+    state.ctxFiles.push(f);
+    renderCtxPill(f);
+  });
+  updateCtxCount();
+}
+
+function renderCtxPill(file) {
+  const pill = document.createElement('div');
+  pill.className = 'file-pill flex items-center gap-1.5 bg-magenta/10 text-magenta text-xs font-semibold rounded-full px-3 py-1.5';
+  pill.dataset.name = file.name;
+  pill.innerHTML = `
+    <span class="max-w-[160px] truncate">${file.name}</span>
+    <button class="hover:text-red-500 transition-colors ml-0.5" onclick="removeCtxFile('${CSS.escape(file.name)}')" title="Remove">
+      <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+      </svg>
+    </button>`;
+  $('ctx-pills').appendChild(pill);
+}
+
+function removeCtxFile(name) {
+  state.ctxFiles = state.ctxFiles.filter(f => f.name !== name);
+  const pill = $('ctx-pills').querySelector(`[data-name="${name}"]`);
+  if (pill) pill.remove();
+  updateCtxCount();
+}
+
+function updateCtxCount() {
+  const badge = $('ctx-count');
+  if (state.ctxFiles.length > 0) {
+    badge.textContent = `${state.ctxFiles.length} file${state.ctxFiles.length > 1 ? 's' : ''}`;
+    badge.classList.remove('hidden');
+  } else {
+    badge.classList.add('hidden');
+  }
+}
+
+// ── Drag & drop setup ───────────────────────────────────────────────
+function setupDrop(zoneId, inputId, onFiles) {
+  const zone  = $(zoneId);
+  const input = $(inputId);
+  zone.addEventListener('click', e => { if (e.target.tagName !== 'BUTTON') input.click(); });
+  zone.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); input.click(); } });
+  input.addEventListener('change', () => { if (input.files.length) onFiles(input.files); });
+  zone.addEventListener('dragenter', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+  zone.addEventListener('dragover',  e => { e.preventDefault(); zone.classList.add('drag-over'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault();
+    zone.classList.remove('drag-over');
+    if (e.dataTransfer.files.length) onFiles(e.dataTransfer.files);
+  });
+}
+
+setupDrop('audio-drop', 'audio-input', files => setAudioFile(files[0]));
+setupDrop('ctx-drop',   'ctx-input',   files => addCtxFiles(files));
+$('audio-clear').addEventListener('click', e => { e.stopPropagation(); clearAudio(); });
+
+// ── Settings toggle ─────────────────────────────────────────────────
+$('settings-toggle').addEventListener('click', () => {
+  const body    = $('settings-body');
+  const chevron = $('settings-chevron');
+  const open    = body.classList.toggle('open');
+  chevron.style.transform = open ? 'rotate(180deg)' : '';
+  $('settings-toggle').setAttribute('aria-expanded', open);
+});
+
+const savedEmail = localStorage.getItem('lectureai_email');
+if (savedEmail) $('email-input').value = savedEmail;
+
+// ── Spinner helper ──────────────────────────────────────────────────
+function setButtonSpinner(label) {
+  $('process-btn-label').innerHTML = `
+    <svg class="animate-spin-ring w-5 h-5" style="animation: spinRing .7s linear infinite" fill="none" viewBox="0 0 24 24">
+      <circle class="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+      <path class="opacity-80" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+    </svg>
+    ${label}`;
+}
+
+function resetButton() {
+  $('process-btn-label').innerHTML = `
+    <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+    </svg>
+    Process Lecture`;
+}
+
+// ── Upload & process ────────────────────────────────────────────────
+$('process-btn').addEventListener('click', handleProcess);
+
+async function handleProcess() {
+  if (!state.audioFile) return;
+  const btn   = $('process-btn');
+  const errEl = $('upload-error');
+  errEl.classList.add('hidden');
+  btn.disabled = true;
+  setButtonSpinner('Uploading…');
+
+  try {
+    const form = new FormData();
+    form.append('audio', state.audioFile);
+    state.ctxFiles.forEach(f => form.append('context_files', f));
+
+    const upRes = await fetch(`${API}/api/upload`, { method: 'POST', body: form });
+    if (!upRes.ok) {
+      const err = await upRes.json().catch(() => ({ detail: 'Upload failed' }));
+      throw new Error(err.detail || `HTTP ${upRes.status}`);
+    }
+    const upData = await upRes.json();
+    state.sessionId = upData.session_id;
+
+    const email = $('email-input').value.trim();
+    if (email) localStorage.setItem('lectureai_email', email);
+
+    setButtonSpinner('Starting pipeline…');
+
+    const procRes = await fetch(`${API}/api/process/${state.sessionId}`, { method: 'POST' });
+    if (!procRes.ok) {
+      const err = await procRes.json().catch(() => ({ detail: 'Could not start pipeline' }));
+      throw new Error(err.detail || `HTTP ${procRes.status}`);
+    }
+
+    buildStepsList();
+    showView('processing');
+    startPolling();
+
+  } catch (err) {
+    btn.disabled = false;
+    resetButton();
+    errEl.textContent = err.message;
+    errEl.classList.remove('hidden');
+  }
+}
+
+// ── Polling ─────────────────────────────────────────────────────────
+function startPolling() {
+  if (state.pollTimer) clearInterval(state.pollTimer);
+  state.pollTimer = setInterval(pollStatus, 2000);
+  pollStatus();
+}
+
+function stopPolling() {
+  if (state.pollTimer) { clearInterval(state.pollTimer); state.pollTimer = null; }
+}
+
+async function pollStatus() {
+  if (!state.sessionId) return;
+  try {
+    const res  = await fetch(`${API}/api/status/${state.sessionId}`);
+    if (!res.ok) return;
+    const data = await res.json();
+
+    const currentStep    = data.step;
+    const stepsCompleted = data.steps_completed || [];
+    const pct            = data.progress ?? 0;
+
+    updateProgress(pct);
+    updateSteps(currentStep, stepsCompleted);
+    $('current-step-label').textContent = currentStep ? (STEP_LABELS[currentStep] || currentStep) : '';
+
+    if (data.status === 'completed') {
+      stopPolling();
+      updateProgress(100);
+      updateSteps(null, stepsCompleted);
+      $('current-step-label').textContent = 'All done!';
+      state.emailSent  = data.email_sent;
+      state.emailError = data.email_error;
+      setTimeout(() => showResults(), 800);
+
+    } else if (data.status === 'failed') {
+      stopPolling();
+      $('processing-error').classList.remove('hidden');
+      $('error-message').textContent = data.error || 'Unknown error occurred.';
+    }
+  } catch (_) { /* network blip — keep polling */ }
+}
+
+// ── Results ──────────────────────────────────────────────────────────
+async function showResults() {
+  try {
+    const res = await fetch(`${API}/api/results/${state.sessionId}`);
+    if (res.ok) {
+      const data = await res.json();
+      state.results = data;
+      populateResults(data);
+    }
+  } catch (_) {}
+  showView('results');
+
+  // Animate check mark
+  setTimeout(() => {
+    const path = $('check-svg-path');
+    if (path) path.classList.add('drawn');
+    launchConfetti();
+  }, 200);
+}
+
+function populateResults(data) {
+  $('result-title').textContent = data.summary || 'Lecture Notes';
+  $('stat-topics').textContent  = data.topic_count  ?? '—';
+  $('stat-actions').textContent = data.action_count ?? '—';
+
+  const base = `${API}/api/download/${state.sessionId}`;
+  $('dl-docx').href = data.docx_url ? `${API}${data.docx_url}` : `${base}/lecture_notes.docx`;
+  $('dl-srt').href  = data.srt_url  ? `${API}${data.srt_url}`  : `${base}/captions.srt`;
+
+  const email = localStorage.getItem('lectureai_email');
+  const conf  = $('email-confirmation');
+  const inner = $('email-confirmation-inner');
+  const text  = $('email-confirm-text');
+
+  if (state.emailSent === true && email) {
+    conf.classList.remove('hidden');
+    inner.className = 'flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-emerald-700 bg-emerald-50 border border-emerald-200';
+    text.textContent = `Notes sent to ${email}`;
+  } else if (state.emailSent === false && state.emailError) {
+    conf.classList.remove('hidden');
+    inner.className = 'flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-amber-700 bg-amber-50 border border-amber-200';
+    text.textContent = 'Email delivery failed — please download your notes directly.';
+  }
+}
+
+// ── Reset ────────────────────────────────────────────────────────────
+function resetApp() {
+  stopPolling();
+  state = { audioFile: null, ctxFiles: [], sessionId: null, pollTimer: null, results: null, emailSent: null, emailError: null };
+  clearAudio();
+  $('ctx-pills').innerHTML = '';
+  updateCtxCount();
+  $('upload-error').classList.add('hidden');
+  $('processing-error').classList.add('hidden');
+  $('email-confirmation').classList.add('hidden');
+  updateProgress(0);
+  resetButton();
+  showView('upload');
+}
+
+$('retry-btn').addEventListener('click', resetApp);
+$('reset-btn').addEventListener('click', resetApp);
+</script>
+
+</body>
+</html>
