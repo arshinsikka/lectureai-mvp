@@ -1,102 +1,57 @@
 <div align="center">
-  <img src="assets/logo.png" alt="LectureAI" width="120" />
+  <img src="assets/logo.png" alt="LectureAI Logo" width="320"/>
 
   # LectureAI
 
-  **AI-powered lecture notes in minutes**
+  **AI-powered lecture notes in minutes — so students can focus on understanding, not note-taking.**
 
-  [![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white)](https://python.org)
-  [![FastAPI](https://img.shields.io/badge/FastAPI-0.100+-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
-  [![Gemini](https://img.shields.io/badge/Gemini-2.0%20Flash-4285F4?logo=google&logoColor=white)](https://ai.google.dev)
-  [![Whisper](https://img.shields.io/badge/OpenAI-Whisper-412991?logo=openai&logoColor=white)](https://openai.com/research/whisper)
-  [![License: MIT](https://img.shields.io/badge/License-MIT-D6249F.svg)](LICENSE)
-
-  [Live Demo](https://lectureai.co) · [Report Bug](https://github.com/arshinsikka/lectureai-mvp/issues) · [Request Feature](https://github.com/arshinsikka/lectureai-mvp/issues)
+  [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue?logo=python&logoColor=white)](https://www.python.org/)
+  [![FastAPI](https://img.shields.io/badge/FastAPI-0.100%2B-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+  [![Gemini 2.0 Flash](https://img.shields.io/badge/Gemini-2.0%20Flash-4285F4?logo=google&logoColor=white)](https://deepmind.google/technologies/gemini/)
+  [![Whisper API](https://img.shields.io/badge/Whisper-API-412991?logo=openai&logoColor=white)](https://openai.com/research/whisper)
+  [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 </div>
 
 ---
 
-## What is LectureAI?
+## The Problem
 
-LectureAI is an end-to-end AI pipeline that turns any lecture recording into structured, bilingual study notes. Upload an audio file (and optionally your lecture slides), and within minutes you receive topic-wise notes in both English and Mandarin, a list of action items and deadlines, and subtitle captions — all delivered to your inbox.
+We surveyed 500+ NUS students and found a consistent, painful pattern:
 
-Built for NUS students and faculty, LectureAI reduces a 2-hour lecture to a 5-minute read while preserving every key concept, formula, and exam deadline the professor mentioned.
+- **72%** rewatch lecture recordings because they missed key insights the first time
+- **230+** students prefer study materials in Mandarin — materials that largely don't exist
+- Current tools — Zoom auto-captions, Otter.ai — fail on the accents and technical vocabulary common in NUS lectures, producing walls of unstructured, error-filled text
+- ChatGPT can help, but requires a student to manually transcribe, copy, and prompt — 30+ minutes of work per lecture, per student, every week
+- Students are spending hours rewriting notes instead of spending that time learning
+
+The recordings exist. The content is there. The bottleneck is the pipeline that turns a 90-minute lecture into something students can actually use.
+
+---
+
+## What LectureAI Does
+
+LectureAI is an end-to-end pipeline that ingests a lecture audio file and optional lecture slides, and produces structured bilingual study notes — automatically, in under 15 minutes, for less than $1.
+
+Upload a recording. Get back a formatted `.docx` with topic-wise notes, key concept definitions, extracted deadlines, and a full Mandarin translation — plus `.srt`/`.vtt` caption files ready for Panopto or any LMS.
+
+**Features:**
+
+- 🎙️ **Whisper-powered transcription** — handles accented English and technical vocabulary better than any caption tool built into a video platform
+- 🔍 **Slide-context correction (RAG)** — lecture slides are injected as context so the AI can fix "LS TM" → "LSTM" and "reoccurrent" → "recurrent" before summarisation
+- 📋 **Topic-wise structured notes** — 4–10 topics per lecture, each with summary bullets, key concept definitions, and formula references; not a transcript reformat
+- 🌐 **Bilingual output (EN + ZH)** — full Mandarin translation with technical terms preserved in English so meaning is never lost in translation
+- ✅ **Automatic action item extraction** — deadlines, assignments, and announcements pulled out with urgency labels
+- 📄 **Caption export** — `.srt` and `.vtt` files compatible with Panopto, Canvas, and standard LMS platforms
+- 📧 **Email delivery** — notes sent directly to a configured inbox; no login, no dashboard friction
+- 🖥️ **Clean web interface** — drag-and-drop upload, live progress tracking, one-click download
 
 ---
 
 ## Demo
 
-> 🎬 **Demo video coming soon.**
+> Demo video coming soon.
 
-<!--
-Replace the placeholder below with your demo GIF or video thumbnail once recorded.
-![LectureAI Demo](assets/demo.gif)
--->
-
-<div align="center">
-  <img src="assets/logo.png" alt="Demo placeholder" width="160" />
-  <br/>
-  <em>Drop your lecture → get bilingual notes in ~10 minutes</em>
-</div>
-
----
-
-## Features
-
-| | Feature |
-|---|---|
-| ✅ | **Whisper-powered transcription** with robust accent and technical-term handling |
-| ✅ | **AI transcript correction** using your lecture slides as grounding context |
-| ✅ | **Topic-wise structured notes** with key concepts, definitions, and formulas |
-| ✅ | **Bilingual output** — English notes + Mandarin (Simplified Chinese) translation |
-| ✅ | **Automatic deadline extraction** — assignments, exams, and announcements |
-| ✅ | **Caption export** (`.srt` / `.vtt`) compatible with Panopto, LumiNUS, and Canvas |
-| ✅ | **Email delivery** — notes sent as a `.docx` attachment the moment they're ready |
-
----
-
-## Architecture
-
-The pipeline runs end-to-end as a background task after a single upload:
-
-```mermaid
-flowchart LR
-    A([🎙️ Audio Upload]) --> B[Preprocess\naudio.py]
-    B --> C[Transcribe\nWhisper API]
-    C --> D[Parse Slides\nPyMuPDF / pptx]
-    D --> E[Correct Transcript\nGemini 2.0 Flash]
-    E --> F[Summarise\nGemini 2.0 Flash]
-    F --> G[Extract Actions\nGemini 2.0 Flash]
-    G --> H[Translate EN→ZH\nGemini 2.0 Flash]
-    H --> I[Generate .docx\npython-docx]
-    I --> J[Export Captions\n.srt / .vtt]
-    J --> K([📧 Email Delivery])
-
-    style A fill:#D6249F,color:#fff,stroke:none
-    style K fill:#10B981,color:#fff,stroke:none
-```
-
-**Key design decisions:**
-- Each session is isolated in `data/{session_id}/` — no cross-session state
-- Long transcripts are split into overlapping 3 000-word chunks for correction
-- All Gemini calls share a centralised retry wrapper: 60 s wait on 429, once-retry on other errors
-- The pipeline writes `status.json` after every step so the frontend can poll live progress
-
----
-
-## Tech Stack
-
-| Layer | Technology |
-|---|---|
-| **Backend** | Python 3.10+, FastAPI, uvicorn |
-| **Transcription** | OpenAI Whisper API (`whisper-1`) |
-| **LLM / NLP** | Google Gemini 2.0 Flash (`google-genai`) |
-| **Audio processing** | pydub — 16 kHz mono WAV normalisation |
-| **Document generation** | python-docx |
-| **Context parsing** | PyMuPDF (PDF), python-pptx (PPTX) |
-| **Email** | Gmail SMTP via Python `smtplib` |
-| **Frontend** | Vanilla JS, Tailwind CSS (CDN), Inter font |
-| **Config** | pydantic-settings, python-dotenv |
+**Sample output:** See [`sample_output/neural_networks_lecture.md`](sample_output/neural_networks_lecture.md) — the actual structured notes generated from a 101-minute NUS lecture on Neural Networks on Sequential Data, including all 7 topics, key concepts, and extracted action items.
 
 ---
 
@@ -105,132 +60,115 @@ flowchart LR
 ### Prerequisites
 
 - Python 3.10+
-- [OpenAI API key](https://platform.openai.com/api-keys)
-- [Google AI API key](https://aistudio.google.com/app/apikey)
-- `ffmpeg` installed — `brew install ffmpeg` on macOS, `apt install ffmpeg` on Linux
+- `ffmpeg` installed and on your PATH (`brew install ffmpeg` on macOS)
+- OpenAI API key (for Whisper transcription)
+- Google AI API key (for Gemini 2.0 Flash — free tier works)
+- A Gmail account with an App Password (for email delivery)
 
-### 1. Clone
+### Setup
 
 ```bash
+# 1. Clone the repository
 git clone https://github.com/arshinsikka/lectureai-mvp.git
 cd lectureai-mvp
-```
 
-### 2. Install dependencies
+# 2. Create and activate a virtual environment
+python3.10 -m venv .venv
+source .venv/bin/activate       # Windows: .venv\Scripts\activate
 
-```bash
-python -m venv .venv
-source .venv/bin/activate          # Windows: .venv\Scripts\activate
+# 3. Install dependencies
 pip install -r requirements.txt
-```
 
-### 3. Configure environment
-
-```bash
+# 4. Configure environment variables
 cp .env.example .env
-# Open .env and fill in your API keys
-```
+# Edit .env with your API keys and email credentials
 
-### 4. Run
-
-```bash
+# 5. Start the server
 uvicorn app.main:app --reload
 ```
 
-| URL | Description |
-|---|---|
-| `http://localhost:8000` | API root |
-| `http://localhost:8000/docs` | Swagger UI (interactive API docs) |
-| `frontend/index.html` | Open in browser — no build step required |
+The API is now live at `http://localhost:8000`. Open `frontend/index.html` in your browser to use the web interface.
+
+See [`.env.example`](.env.example) for a full description of every required variable.
 
 ---
 
-## API Endpoints
+## Architecture Overview
 
-| Method | Endpoint | Description |
-|---|---|---|
-| `POST` | `/api/upload` | Upload audio + optional context files. Returns `session_id`. |
-| `POST` | `/api/process/{session_id}` | Start the full pipeline as a background task. |
-| `GET` | `/api/status/{session_id}` | Poll progress: step name, % complete, completion status. |
-| `GET` | `/api/results/{session_id}` | Retrieve metadata and download URLs for completed outputs. |
-| `GET` | `/api/download/{session_id}/{filename}` | Download a generated file (`.docx`, `.srt`, `.vtt`). |
+LectureAI is a sequential, checkpoint-based pipeline. Each step saves its output as a JSON file, which means any step can be re-run independently without reprocessing the entire lecture.
 
-Full interactive documentation: `http://localhost:8000/docs`
+```
+Upload → Preprocess (pydub) → Transcribe (Whisper API)
+       → Parse Context (PyMuPDF / python-pptx)
+       → Correct Transcript (Gemini 2.0 Flash + slide context)
+       → Summarise (Gemini 2.0 Flash + slide context)
+       → Extract Action Items (Gemini 2.0 Flash)
+       → Translate EN→ZH (Gemini 2.0 Flash)
+       → Generate .docx (python-docx)
+       → Export Captions (.srt / .vtt)
+       → Send Email (Gmail SMTP)
+```
+
+The two most important steps are **Correct** and **Summarise** — both receive the lecture slides as context, which is what separates LectureAI's output quality from a generic "paste transcript into ChatGPT" workflow.
+
+For a detailed breakdown of every step, the data flow, the technology choices, and the tradeoffs, see [**docs/architecture.md**](docs/architecture.md).
 
 ---
 
-## Cost per Lecture
+## Cost Analysis
 
-Approximate cost for a **60-minute lecture**:
+For a typical 60-minute lecture:
 
-| Step | Model | Estimated Cost |
+| Step | Service | Cost |
 |---|---|---|
-| Transcription | OpenAI Whisper | ~$0.36 (60 min × $0.006/min) |
-| Correction + Summarisation | Gemini 2.0 Flash | ~$0.05–0.15 |
-| Translation | Gemini 2.0 Flash | ~$0.03–0.08 |
-| **Total** | | **~$0.44–0.59 per lecture** |
+| Transcription | OpenAI Whisper API ($0.006/min) | ~$0.36 |
+| Correction | Gemini 2.0 Flash (free tier) | $0.00 |
+| Summarisation | Gemini 2.0 Flash (free tier) | $0.00 |
+| Translation | Gemini 2.0 Flash (free tier) | $0.00 |
+| Action Items | Gemini 2.0 Flash (free tier) | $0.00 |
+| **Total** | | **< $0.40** |
 
-> Gemini 2.0 Flash has a generous free tier (1 500 requests/day). Development and testing are essentially free.
+At NUS scale — roughly 10,000 lectures per semester across all faculties — full bilingual structured notes for every lecture would cost under $4,000 per semester. That's less than a single part-time TA salary, delivering value to every student in every course.
 
 ---
 
 ## Roadmap
 
-- [ ] **Zoom / MS Teams integration** — auto-ingest recordings from meeting platforms
-- [ ] **Student dashboard** — session history, full-text search across past lectures
-- [ ] **Multi-language support** — Spanish, Hindi, Malay (beyond EN + ZH)
-- [ ] **LMS integration** — push notes directly to Canvas, Blackboard, or LumiNUS
-- [ ] **AI quiz generation** — auto-generate MCQs and flashcards from topic sections
+| Phase | Status | Description |
+|---|---|---|
+| **Phase 1** | ✅ Complete | MVP: manual upload, bilingual notes, email delivery, caption export |
+| **Phase 2** | Planned | Zoom OAuth integration, Panopto caption push via API |
+| **Phase 3** | Planned | Student dashboard, per-course folders, searchable notes history |
+| **Phase 4** | Planned | LMS integration (Canvas/IVLE), quiz and flashcard generation |
+| **Phase 5** | Planned | Multi-language support (Tamil, Bahasa, Malay), speaker diarisation |
 
 ---
 
-## Project Structure
+## API Reference
 
-```
-lectureai-mvp/
-├── app/
-│   ├── main.py               # FastAPI app, CORS, router registration
-│   ├── config.py             # pydantic-settings config + path helpers
-│   ├── models.py             # Pydantic request/response models
-│   ├── pipeline/
-│   │   └── orchestrator.py   # Runs the full step sequence, writes status.json
-│   ├── routes/
-│   │   ├── upload.py         # POST /api/upload
-│   │   ├── pipeline.py       # POST /api/process, GET /api/status
-│   │   └── results.py        # GET /api/results, GET /api/download
-│   ├── services/
-│   │   ├── audio.py          # pydub preprocessing
-│   │   ├── transcription.py  # Whisper API
-│   │   ├── context_parser.py # PDF / PPTX slide extraction
-│   │   ├── correction.py     # Gemini transcript correction (chunked)
-│   │   ├── summarisation.py  # Gemini topic-wise notes
-│   │   ├── action_items.py   # Gemini deadline extraction
-│   │   ├── translation.py    # Gemini EN→ZH translation
-│   │   ├── doc_generator.py  # python-docx output
-│   │   ├── caption_export.py # .srt / .vtt generation
-│   │   ├── email_sender.py   # Gmail SMTP delivery
-│   │   └── gemini_helper.py  # Shared retry wrapper for all Gemini calls
-│   └── prompts/              # Prompt templates (.txt)
-├── frontend/
-│   └── index.html            # Single-page app (no build step)
-├── tests/                    # pytest unit + integration tests
-├── assets/
-│   └── logo.png
-├── .env.example
-├── requirements.txt
-└── start.sh
-```
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/ping` | Health check |
+| `POST` | `/api/upload` | Upload audio + optional context files; returns `session_id` |
+| `POST` | `/api/process/{session_id}` | Start full pipeline in background |
+| `GET` | `/api/status/{session_id}` | Poll pipeline progress (0–100%) |
+| `GET` | `/api/results/{session_id}` | Retrieve notes preview + download URLs |
+| `GET` | `/api/download/{session_id}/{filename}` | Download `.docx`, `.srt`, or `.vtt` |
+
+Full request/response schemas: [**docs/api.md**](docs/api.md) *(coming soon)*
 
 ---
 
 ## Team
 
-Built at the **National University of Singapore (NUS)** to solve a real student pain point: 2-hour lectures, zero notes.
+Built at NUS as part of the **NUS Enterprise BLOCK71** incubator program.
 
-🌐 [lectureai.co](https://lectureai.co) · ✉️ hello@lectureai.co
+- Website: [lectureai.co](https://lectureai.co)
+- Contact: [teamlectureai@gmail.com](mailto:teamlectureai@gmail.com)
+- GitHub: [github.com/arshinsikka](https://github.com/arshinsikka)
 
 ---
 
 ## License
 
-[MIT](LICENSE) © 2025 LectureAI
+[MIT](LICENSE) — free to use, fork, and build on.
