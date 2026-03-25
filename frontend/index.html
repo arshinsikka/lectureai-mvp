@@ -172,6 +172,53 @@
     @media (max-width: 640px) {
       .hero-gradient { background: linear-gradient(160deg, #0A0A0A 0%, #2d0826 60%, #FAFAFA 100%); }
     }
+
+    /* ── Login page background ── */
+    .login-bg {
+      background: linear-gradient(160deg, #fdf2f8 0%, #f9fafb 45%, #eff3ff 100%);
+      min-height: calc(100vh - 64px);
+    }
+
+    /* ── Tooltip ── */
+    .tooltip-wrap { position: relative; }
+    .tooltip-wrap .tooltip-text {
+      visibility: hidden; opacity: 0;
+      position: absolute; bottom: calc(100% + 6px); left: 50%;
+      transform: translateX(-50%);
+      background: #1A1A2E; color: #fff;
+      font-size: 11px; font-weight: 600;
+      padding: 4px 10px; border-radius: 6px;
+      white-space: nowrap;
+      pointer-events: none;
+      transition: opacity .15s ease;
+    }
+    .tooltip-wrap:hover .tooltip-text { visibility: visible; opacity: 1; }
+
+    /* ── SSO button ── */
+    .btn-sso {
+      transition: border-color .15s ease, background .15s ease, color .15s ease, transform .15s ease;
+    }
+    .btn-sso:hover { border-color: #1A1A2E; background: #f9fafb; transform: translateY(-1px); }
+
+    /* ── Login input ── */
+    .login-input {
+      width: 100%; border: 1.5px solid #e5e7eb; border-radius: 12px;
+      padding: 12px 16px; font-size: 14px; color: #1A1A2E;
+      outline: none; transition: border-color .2s ease, box-shadow .2s ease;
+      background: #fff;
+    }
+    .login-input::placeholder { color: #d1d5db; }
+    .login-input:focus { border-color: #D6249F; box-shadow: 0 0 0 3px rgba(214,36,159,.12); }
+    .login-input.error { border-color: #ef4444; box-shadow: 0 0 0 3px rgba(239,68,68,.1); }
+
+    /* ── Nav user avatar ── */
+    .nav-avatar {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: linear-gradient(135deg, #D6249F, #9d1b7a);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: 700; color: #fff; flex-shrink: 0;
+      letter-spacing: .03em;
+    }
   </style>
 </head>
 
@@ -215,10 +262,28 @@
     </div>
 
     <!-- Nav right -->
-    <a href="https://lectureai.co" target="_blank"
-       class="text-xs text-white/40 hover:text-white/80 transition-colors duration-200 font-medium">
-      lectureai.co ↗
-    </a>
+    <div class="flex items-center gap-5">
+      <!-- Logged-out state -->
+      <div id="nav-loggedout" class="flex items-center">
+        <a href="https://lectureai.co" target="_blank"
+           class="text-xs text-white/40 hover:text-white/80 transition-colors duration-200 font-medium">
+          lectureai.co ↗
+        </a>
+      </div>
+
+      <!-- Logged-in state (hidden until auth) -->
+      <div id="nav-loggedin" class="hidden items-center gap-3">
+        <div class="flex items-center gap-2">
+          <div id="nav-avatar-circle" class="nav-avatar">PT</div>
+          <span id="nav-username" class="text-white/80 text-sm font-semibold">Prof. Tan</span>
+        </div>
+        <span class="text-white/20 text-xs">|</span>
+        <button id="signout-btn"
+                class="text-xs text-white/40 hover:text-white/70 transition-colors duration-200 font-medium">
+          Sign Out
+        </button>
+      </div>
+    </div>
   </div>
 </header>
 
@@ -227,8 +292,139 @@
 <main class="flex-1">
 
 
+  <!-- ══════════════════ VIEW 0 · LOGIN ═════════════════════════ -->
+  <div id="view-login" class="view active">
+    <section class="login-bg flex items-center justify-center px-4 py-14">
+      <div class="w-full max-w-[420px]">
+
+        <!-- Card -->
+        <div class="bg-white rounded-2xl card p-8 sm:p-10 animate-scale-in">
+
+          <!-- Logo -->
+          <div class="flex items-center justify-center gap-3 mb-8">
+            <div class="w-9 h-9 flex-shrink-0">
+              <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <line x1="20" y1="4" x2="20" y2="10" stroke="#1A1A2E" stroke-width="2" stroke-linecap="round"/>
+                <circle cx="20" cy="3" r="2" fill="#D6249F"/>
+                <rect x="8" y="10" width="24" height="18" rx="5" fill="#1A1A2E"/>
+                <rect x="13" y="16" width="5" height="5" rx="1.5" fill="white"/>
+                <rect x="22" y="16" width="5" height="5" rx="1.5" fill="white"/>
+                <circle cx="14.5" cy="17.5" r="1" fill="#D6249F"/>
+                <circle cx="23.5" cy="17.5" r="1" fill="#D6249F"/>
+                <rect x="15" y="24" width="10" height="2" rx="1" fill="white" opacity=".4"/>
+                <rect x="4" y="16" width="4" height="7" rx="2" fill="#1A1A2E"/>
+                <rect x="32" y="16" width="4" height="7" rx="2" fill="#1A1A2E"/>
+                <rect x="11" y="30" width="18" height="8" rx="4" fill="#1A1A2E" opacity=".85"/>
+                <circle cx="20" cy="34" r="2" fill="#D6249F"/>
+              </svg>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-ink font-bold text-xl tracking-tight">Lecture<span class="text-magenta">AI</span></span>
+              <span class="text-[10px] font-semibold text-magenta/80 border border-magenta/30 rounded-full px-2 py-0.5 tracking-wide uppercase">beta</span>
+            </div>
+          </div>
+
+          <!-- Heading -->
+          <div class="mb-7">
+            <h1 class="text-2xl font-black text-ink tracking-tight">Welcome back</h1>
+            <p class="text-sm text-gray-400 mt-1.5 leading-relaxed">Sign in to manage your lecture notes</p>
+          </div>
+
+          <!-- Form -->
+          <form id="login-form" onsubmit="handleLogin(); return false;">
+
+            <!-- NUS Staff Email -->
+            <div class="mb-4">
+              <label class="block text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-1.5" for="login-email">
+                NUS Staff Email
+              </label>
+              <input id="login-email" type="email" autocomplete="email"
+                     placeholder="e.g. proftan@nus.edu.sg"
+                     value="proftan@nus.edu.sg"
+                     class="login-input" />
+              <p id="login-email-error" class="hidden text-xs text-red-500 mt-1.5 font-medium flex items-center gap-1">
+                <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                </svg>
+                Please use your NUS staff email
+              </p>
+            </div>
+
+            <!-- Password -->
+            <div class="mb-5">
+              <label class="block text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-1.5" for="login-password">
+                Password
+              </label>
+              <div class="relative">
+                <input id="login-password" type="password" autocomplete="current-password"
+                       placeholder="••••••••"
+                       value="demo1234"
+                       class="login-input pr-11" />
+                <button type="button" id="toggle-password"
+                        class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500 transition-colors p-1"
+                        aria-label="Toggle password visibility">
+                  <!-- Eye open -->
+                  <svg id="eye-open" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                  </svg>
+                  <!-- Eye closed -->
+                  <svg id="eye-closed" class="w-4 h-4 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- Remember me -->
+            <div class="flex items-center gap-2.5 mb-6">
+              <input id="login-remember" type="checkbox" checked
+                     class="w-4 h-4 rounded border-gray-300 accent-[#D6249F] cursor-pointer" />
+              <label for="login-remember" class="text-sm text-gray-500 cursor-pointer select-none">Remember me</label>
+            </div>
+
+            <!-- Sign In button -->
+            <button id="login-btn" type="submit"
+                    class="btn-primary w-full py-3.5 rounded-xl font-bold text-white text-sm focus:outline-none focus:ring-2 focus:ring-magenta/40 mb-1">
+              <span id="login-btn-label" class="flex items-center justify-center gap-2">Sign In</span>
+            </button>
+
+          </form>
+
+          <!-- SSO divider -->
+          <div class="flex items-center gap-3 my-5">
+            <div class="flex-1 h-px bg-gray-100"></div>
+            <span class="text-[11px] text-gray-300 font-semibold tracking-wide uppercase">NUS Single Sign-On</span>
+            <div class="flex-1 h-px bg-gray-100"></div>
+          </div>
+
+          <!-- SSO button -->
+          <div class="tooltip-wrap">
+            <button type="button"
+                    class="btn-sso w-full py-3 rounded-xl border-2 border-gray-200 text-gray-400 text-sm font-semibold focus:outline-none flex items-center justify-center gap-2.5 cursor-default">
+              <!-- NUS shield-style icon -->
+              <svg class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+              </svg>
+              Sign in with NUS SSO
+            </button>
+            <span class="tooltip-text">Coming soon</span>
+          </div>
+
+        </div>
+
+        <!-- Footer note -->
+        <p class="text-center text-xs text-gray-300 font-medium mt-6">
+          National University of Singapore · Staff Portal
+        </p>
+
+      </div>
+    </section>
+  </div><!-- /view-login -->
+
+
   <!-- ══════════════════ VIEW 1 · UPLOAD ════════════════════════ -->
-  <div id="view-upload" class="view active">
+  <div id="view-upload" class="view">
 
     <!-- Hero -->
     <section class="hero-gradient pt-16 pb-20 px-5 sm:px-8 text-center">
@@ -584,7 +780,7 @@ const $ = id => document.getElementById(id);
 
 // ── View transitions ────────────────────────────────────────────────
 function showView(name) {
-  ['upload', 'processing', 'results'].forEach(v => {
+  ['login', 'upload', 'processing', 'results'].forEach(v => {
     const el = $(`view-${v}`);
     if (v === name) {
       el.classList.add('active');
@@ -802,8 +998,121 @@ $('settings-toggle').addEventListener('click', () => {
   $('settings-toggle').setAttribute('aria-expanded', open);
 });
 
-const savedEmail = localStorage.getItem('lectureai_email');
-if (savedEmail) $('email-input').value = savedEmail;
+// ── Auth helpers ────────────────────────────────────────────────────
+function formatProfName(email) {
+  const local = email.split('@')[0].toLowerCase();
+  let displayName, initials;
+  if (local.startsWith('prof')) {
+    const surname = local.slice(4);
+    const cap = surname ? surname.charAt(0).toUpperCase() + surname.slice(1) : '';
+    displayName = `Prof. ${cap}`;
+    initials = ('P' + (cap.charAt(0) || '')).toUpperCase();
+  } else {
+    const parts = local.split('.');
+    if (parts.length > 1) {
+      displayName = parts.map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(' ');
+      initials = parts.map(p => p.charAt(0).toUpperCase()).join('').slice(0, 2);
+    } else {
+      displayName = local.charAt(0).toUpperCase() + local.slice(1);
+      initials = local.slice(0, 2).toUpperCase();
+    }
+  }
+  return { displayName, initials };
+}
+
+function setLoggedIn(email, displayName, initials) {
+  $('nav-loggedout').classList.add('hidden');
+  $('nav-loggedin').classList.remove('hidden');
+  $('nav-loggedin').classList.add('flex');
+  $('nav-avatar-circle').textContent = initials;
+  $('nav-username').textContent = displayName;
+  $('email-input').value = email;
+}
+
+function initAuth() {
+  const raw = localStorage.getItem('lectureai_auth');
+  if (raw) {
+    try {
+      const { email, displayName, initials } = JSON.parse(raw);
+      setLoggedIn(email, displayName, initials);
+      showView('upload');
+      return;
+    } catch (_) {
+      localStorage.removeItem('lectureai_auth');
+    }
+  }
+  showView('login');
+}
+
+// ── Password show/hide ───────────────────────────────────────────────
+$('toggle-password').addEventListener('click', () => {
+  const input = $('login-password');
+  const isHidden = input.type === 'password';
+  input.type = isHidden ? 'text' : 'password';
+  $('eye-open').classList.toggle('hidden', !isHidden);
+  $('eye-closed').classList.toggle('hidden', isHidden);
+});
+
+// ── Login handler ────────────────────────────────────────────────────
+async function handleLogin() {
+  const email = $('login-email').value.trim();
+  const emailInput = $('login-email');
+  const emailError = $('login-email-error');
+
+  emailError.classList.add('hidden');
+  emailInput.classList.remove('error');
+
+  if (!email.toLowerCase().endsWith('@nus.edu.sg')) {
+    emailError.classList.remove('hidden');
+    emailInput.classList.add('error');
+    emailInput.focus();
+    return;
+  }
+
+  // Loading spinner
+  const btn   = $('login-btn');
+  const label = $('login-btn-label');
+  btn.disabled = true;
+  label.innerHTML = `
+    <svg class="w-4 h-4" style="animation: spinRing .7s linear infinite" fill="none" viewBox="0 0 24 24">
+      <circle class="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+      <path class="opacity-80" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+    </svg>
+    Signing in…`;
+
+  await new Promise(r => setTimeout(r, 500));
+
+  const { displayName, initials } = formatProfName(email);
+  localStorage.setItem('lectureai_auth', JSON.stringify({ email, displayName, initials }));
+  localStorage.setItem('lectureai_email', email);
+
+  setLoggedIn(email, displayName, initials);
+  showView('upload');
+
+  // Reset button for future sign-ins
+  btn.disabled = false;
+  label.innerHTML = 'Sign In';
+}
+
+// ── Sign out ─────────────────────────────────────────────────────────
+$('signout-btn').addEventListener('click', () => {
+  localStorage.removeItem('lectureai_auth');
+  localStorage.removeItem('lectureai_email');
+  $('nav-loggedin').classList.add('hidden');
+  $('nav-loggedin').classList.remove('flex');
+  $('nav-loggedout').classList.remove('hidden');
+  $('email-input').value = '';
+  showView('login');
+});
+
+// ── Dismiss email error on typing ────────────────────────────────────
+$('login-email').addEventListener('input', () => {
+  $('login-email-error').classList.add('hidden');
+  $('login-email').classList.remove('error');
+});
+
+// ── Initialise auth on page load ─────────────────────────────────────
+initAuth();
 
 // ── Spinner helper ──────────────────────────────────────────────────
 function setButtonSpinner(label) {
