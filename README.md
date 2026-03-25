@@ -49,7 +49,9 @@ Upload a recording. Get back a formatted `.docx` with topic-wise notes, key conc
 
 ## Demo
 
-> Demo video coming soon.
+▶️ **[Watch the MVP demo on Dropbox](https://www.dropbox.com/scl/fi/3drnzwbqw1go4hsb5yluq/MVP-video-latest.mp4?rlkey=h1wnumtczbgu1k1s870h8pu8m&e=1&st=jg34zkrt&dl=0)**
+
+> **Note:** This recording covers the initial MVP. It will be updated to reflect the latest version of the product, which includes additional functionality (mock login flow with NUS SSO branding, professor name extraction, per-session email pre-population, and UI refinements).
 
 **Sample output:** See [`sample_output/neural_networks_lecture.md`](sample_output/neural_networks_lecture.md) — the actual structured notes generated from a 101-minute NUS lecture on Neural Networks on Sequential Data, including all 7 topics, key concepts, and extracted action items.
 
