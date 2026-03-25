@@ -128,7 +128,7 @@ For a typical 60-minute lecture:
 | Action Items | Gemini 2.0 Flash (free tier) | $0.00 |
 | **Total** | | **< $0.40** |
 
-At NUS scale — roughly 10,000 lectures per semester across all faculties — full bilingual structured notes for every lecture would cost under $4,000 per semester. That's less than a single part-time TA salary, delivering value to every student in every course.
+At NUS scale — roughly 10,000 lectures per semester across all faculties — full bilingual structured notes for every lecture would cost under $4,000 per semester. That's less than a couple of part-time TA's salaries, delivering value to every student in every course.
 
 ---
 
